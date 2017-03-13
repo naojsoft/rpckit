@@ -156,7 +156,10 @@ known_types = {}
 
 constheader = """
 # Need to import flavors mentioned in secinfo4
-from rpc import RPCSEC_GSS
+from rpckit.rpc import RPCSEC_GSS
+import six
+if not six.PY2:
+    long = int
 
 FALSE = 0
 TRUE = 1
@@ -164,16 +167,17 @@ TRUE = 1
 """
 
 typesheader = """
-from %s import *
-from %s import *
+from .%s import *
+from .%s import *
 try:
     # Assume that the python xdrlib comes first on the PYTHONPATH
     from xdrlib import Error as XDRError
+
 except ImportError:
     # Never mind. I will use the pynfs one.
-    from xdrlib import XDRError
+    from rpckit.xdrlib import XDRError
 
-import rpc
+from rpckit import rpc
 
 class BadDiscriminant(rpc.RPCException):
     def __init__(self, value, klass):
@@ -186,16 +190,17 @@ class BadDiscriminant(rpc.RPCException):
 """
 
 packerheader = """
-import rpc
-import %s
-import %s
-import xdrlib
+from rpckit import rpc
+from . import %s
+from . import %s
+from rpckit import xdrlib
 try:
     # Assume that the python xdrlib comes first on the PYTHONPATH
     from xdrlib import Error as XDRError
+
 except ImportError:
     # Never mind. I will the use pynfs one.
-    from xdrlib import XDRError
+    from rpckit.xdrlib import XDRError
 
 """
 
@@ -312,7 +317,7 @@ def gen_pack_code(ip, id, typedecl, classname):
             ip.pr('self.pack_f%s(%s, data.%s%s)' % (name, typedecl.arraylen, id, extra))
         else:
             if typedecl.arraylen:
-                ip.pr('if len(data.%s) > %s: raise XDRError, "%s too long packing %s.%s"' % (id, typedecl.arraylen, name, classname, id))
+                ip.pr('if len(data.%s) > %s: raise XDRError("%s too long packing %s.%s")' % (id, typedecl.arraylen, name, classname, id))
             ip.pr('self.pack_%s(data.%s%s)' % (name, id, extra))
     else:
         ip.pr("self.pack_%s(data.%s)" % (typedecl.base_type, id))
@@ -332,7 +337,7 @@ def gen_unpack_code(ip, id, typedecl, classname):
         else:
             ip.pr("data.%s = self.unpack_%s(%s)" % (id, name, extra[2:]))
             if typedecl.arraylen:
-                ip.pr('if len(data.%s) > %s: raise XDRError, "%s too long unpacking %s.%s"' % (id, typedecl.arraylen, name, classname, id))
+                ip.pr('if len(data.%s) > %s: raise XDRError("%s too long unpacking %s.%s")' % (id, typedecl.arraylen, name, classname, id))
     else:
         ip.pr("data.%s = self.unpack_%s()" % (id, typedecl.base_type))
 
@@ -360,7 +365,7 @@ def gen_packers(id, typeobj):
             ip.pr('self.pack_f%s(%s, data%s)' % (name, typeobj.arraylen, extra))
         else:
             if typeobj.arraylen:
-                ip.pr('if len(data) > %s: raise XDRError, "%s too long"' % (typeobj.arraylen, name))
+                ip.pr('if len(data) > %s: raise XDRError("%s too long")' % (typeobj.arraylen, name))
             ip.pr('self.pack_%s(data%s)' % (name, extra))
     else:
         # Simple alias
@@ -387,7 +392,7 @@ def gen_packers(id, typeobj):
         else:
             if typeobj.arraylen:
                 ip.pr("data = self.unpack_%s(%s)" % (name, extra[2:]))
-                ip.pr('if len(data) > %s: raise XDRError, "%s too long"' % (typeobj.arraylen, name))
+                ip.pr('if len(data) > %s: raise XDRError("%s too long")' % (typeobj.arraylen, name))
                 ip.pr("return data")
             else:
                 ip.pr("return self.unpack_%s(%s)" % (name, extra[2:]))
@@ -410,10 +415,10 @@ def gen_switch_code(ip, union_body, packer, classname, assertions=0):
     # Assert switch value
     if assertions:
         ip.pr('if not isinstance(data, %s.%s):' % (types_file, classname))
-        ip.pr('    raise TypeError, "pack_%s"' % classname)
+        ip.pr('    raise TypeError("pack_%s")' % classname)
         check_not_reserved(switch_id)
         ip.pr("if data.%s is None:" % switch_id)
-        ip.pr('    raise TypeError, "pack_%s: Member %s has no value"' % (classname, switch_id))
+        ip.pr('    raise TypeError("pack_%s: Member %s has no value")' % (classname, switch_id))
     packer(ip, switch_id, typedecl, classname)
 
     # 1. case_declaration + case_list
@@ -446,7 +451,7 @@ def gen_switch_code(ip, union_body, packer, classname, assertions=0):
                 # FRED - It is?
                 if assertions:
                     ip.pr("if data.%s is None:" % declaration[0])
-                    ip.pr('    raise TypeError, "pack_%s: Member %s has no value"' % (classname, declaration[0] ))
+                    ip.pr('    raise TypeError("pack_%s: Member %s has no value")' % (classname, declaration[0] ))
                 packer(ip, declaration[0], declaration[1], classname)
                 ip.pr("data.arm = data.%s" % declaration[0])
             else:
@@ -594,10 +599,10 @@ def p_type_def_3(t):
     ip.change(4)
     # assert_not_none
     ip.pr('if not isinstance(data, %s.%s):' % (types_file, classname))
-    ip.pr('    raise TypeError, "pack_%s"' % classname)
+    ip.pr('    raise TypeError("pack_%s")' % classname)
     for (id, typedecl) in struct_body:
         ip.pr('if data.%s is None:' % id)
-        ip.pr('    raise TypeError, "pack_%s: Member %s has no value."' % (classname, id))
+        ip.pr('    raise TypeError("pack_%s: Member %s has no value.")' % (classname, id))
     for (id, typedecl) in struct_body:
         gen_pack_code(ip, id, typedecl, classname)
     ip.cont("\n")
@@ -978,7 +983,7 @@ def p_program_def(t):
     '''program_def : PROGRAM ID LBRACE version_def version_def_list RBRACE EQUALS NUMBER SEMI'''
     id = t[2]
     prog_num = (t[8]).strip()
-    print("%s = %sL" % (id, prog_num), file=const_out)
+    print("%s = long(%s)" % (id, prog_num), file=const_out)
 
 
 # version-def
@@ -1110,8 +1115,3 @@ if __name__ == "__main__":
         sys.exit(1)
 
     run(sys.argv[1])
-
-# Local variables:
-# py-indent-offset: 4
-# tab-width: 8
-# End:

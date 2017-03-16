@@ -674,14 +674,16 @@ class Client:
 
     def bindsocket(self, sock=853):
         # Override this to bind to a different port (e.g. reserved)
-    # This is necessary because otherwise will default to an insecure
-    # port, which the server will reject unless it has the 'insecure'
-    # option set
+        # This is necessary because otherwise will default to an insecure
+        # port, which the server will reject unless it has the 'insecure'
+        # option set
         if self.prog < 0x200000:
                 try:
                     self.sock.bind(('', sock))
+
                 except socket.error as why:
-                    if why[0] == EADDRINUSE:
+                    #if why[0] == EADDRINUSE:
+                    if why.errno == EADDRINUSE:
                         self.bindsocket(sock+1)
                     else:
                         self.sock.bind(('', 0))
@@ -1924,9 +1926,3 @@ def testclt():
     print('making call...')
     reply = c.call_1('hello, world, ')
     print('call returned', repr(reply))
-
-
-# Local variables:
-# py-indent-offset: 4
-# tab-width: 8
-# End:

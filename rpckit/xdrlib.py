@@ -13,12 +13,12 @@ import six
 if six.PY3:
     long = int
 
-from io import StringIO as _StringIO
+from io import BytesIO as _StringIO
 
 __all__ = ["Error", "Packer", "Unpacker", "ConversionError"]
 
 # exceptions
-class Error:
+class Error(Exception):
     """Exception class for this module. Use:
 
     except xdrlib.Error, var:
@@ -46,7 +46,8 @@ def assert_int(x):
         val = long(x)
     except:
         badinput = repr(x)
-        if len(badinput) > 10: badinput = badinput[0:10] + "..."
+        if len(badinput) > 10:
+            badinput = badinput[0:10] + "..."
         raise XDRError("Expected int, got %s %s" % (badinput, type(x)))
     return val
 
@@ -55,7 +56,8 @@ def assert_long(x):
         val = long(x)
     except:
         badinput = repr(x)
-        if len(badinput) > 10: badinput = badinput[0:10] + "..."
+        if len(badinput) > 10:
+            badinput = badinput[0:10] + "..."
         raise XDRError("Expected long, got %s %s" % (badinput, type(x)))
     return val
 
@@ -64,7 +66,8 @@ def assert_float(x):
         val = float(x)
     except:
         badinput = repr(x)
-        if len(badinput) > 10: badinput = badinput[0:10] + "..."
+        if len(badinput) > 10:
+            badinput = badinput[0:10] + "..."
         raise XDRError("Expected float, got %s %s" % (badinput, type(x)))
     return val
 
@@ -73,7 +76,8 @@ def assert_double(x):
         val = float(x)
     except:
         badinput = repr(x)
-        if len(badinput) > 10: badinput = badinput[0:10] + "..."
+        if len(badinput) > 10:
+            badinput = badinput[0:10] + "..."
         raise XDRError("Expected double, got %s %s" % (badinput, type(x)))
     return val
 
@@ -82,16 +86,19 @@ def assert_list(x):
         val = list(x)
     except:
         badinput = repr(x)
-        if len(badinput) > 10: badinput = badinput[0:10] + "..."
+        if len(badinput) > 10:
+            badinput = badinput[0:10] + "..."
         raise XDRError("Expected list, got %s %s" % (badinput, type(x)))
     return val
 
 def assert_string(x):
     try:
-        val = str(x)
+        #val = str(x)
+        val = str(x).encode('utf-8')
     except:
         badinput = repr(x)
-        if len(badinput) > 10: badinput = badinput[0:10] + "..."
+        if len(badinput) > 10:
+            badinput = badinput[0:10] + "..."
         raise XDRError("Expected string, got %s %s" % (badinput, type(x)))
     return val
 
@@ -155,27 +162,37 @@ class Packer:
         self.__buf.write(struct.pack('>d', x))
 
     def pack_fstring(self, n, s):
-        try: n = assert_int(n)
-        except XDRError as msg: raise XDRError("pack_fstring " + msg)
-        try: s = assert_string(s)
-        except XDRError as msg: raise XDRErrorr("pack_fstring " + msg)
+        try:
+            n = assert_int(n)
+        except XDRError as msg:
+            raise XDRError("pack_fstring " + msg)
+        try:
+            s = assert_string(s)
+        except XDRError as msg:
+            raise XDRErrorr("pack_fstring " + msg)
         if n < 0:
             raise XDRError('pack_fstring size must be nonnegative')
-        n = ((n+3)/4)*4
+        n = ((n + 3 ) // 4) * 4
         data = s[:n]
-        data = data + string.join(['\0' for x in range(n - len(data))], "")
+        data = data + b''.join(['\0' for x in range(n - len(data))])
         self.__buf.write(data)
 
     pack_fopaque = pack_fstring
 
     def pack_string(self, s):
-        try: s = assert_string(s)
-        except XDRError as msg: raise XDRError("pack_string " + msg)
+        try:
+            s = assert_string(s)
+        except XDRError as msg:
+            raise XDRError("pack_string " + msg)
         n = len(s)
-        try: self.pack_uint(n)
-        except XDRError as msg: raise XDRError("pack_string " + msg)
-        try: self.pack_fstring(n, s)
-        except XDRError as msg: raise XDRError("pack_String " + msg)
+        try:
+            self.pack_uint(n)
+        except XDRError as msg:
+            raise XDRError("pack_string " + msg)
+        try:
+            self.pack_fstring(n, s)
+        except XDRError as msg:
+            raise XDRError("pack_String " + msg)
 
     pack_opaque = pack_string
     pack_bytes = pack_string
@@ -293,13 +310,14 @@ class Unpacker:
         if n < 0:
             raise XDRError('fstring size must be nonnegative')
         i = self.__pos
-        j = i + (n+3)/4*4
+        j = i + (n + 3) // 4 * 4
         pad_len = 0
         if j > len(self.__buf):
             pad_len = j - len(self.__buf)
             # raise XDRError, "Packet len (%d) less than needed (%d)." % (len(self.__buf),j)
         self.__pos = j
-        return (self.__buf + ('\x00' * pad_len))[i:i+n]
+        data = (self.__buf + (b'\x00' * pad_len))[i:i+n]
+        return data.decode('utf-8')
 
     unpack_fopaque = unpack_fstring
 

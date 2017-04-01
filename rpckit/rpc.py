@@ -350,18 +350,18 @@ class Unpacker(xdrlib.Unpacker):
 
     def unpack_gss_init(self):
         handle = self.unpack_opaque()
-        major  = self.unpack_uint()
-        minor  = self.unpack_uint()
+        major = self.unpack_uint()
+        minor = self.unpack_uint()
         window = self.unpack_uint()
-        token  = self.unpack_opaque()
+        token = self.unpack_opaque()
         return major, minor, handle, window, token
 
     def unpack_auth_unix(self):
-        stamp=self.unpack_uint()
-        machinename=self.unpack_string()
-        uid=self.unpack_uint()
-        gid=self.unpack_uint()
-        n_gids=self.unpack_uint()
+        stamp = self.unpack_uint()
+        machinename = self.unpack_string()
+        uid = self.unpack_uint()
+        gid = self.unpack_uint()
+        n_gids = self.unpack_uint()
         gids = []
         for i in range(n_gids):
             gids.append(self.unpack_uint())
@@ -422,7 +422,7 @@ class Unpacker(xdrlib.Unpacker):
 # Subroutines to create opaque authentication objects
 
 def make_auth_null():
-    return ''
+    return b''
 
 def make_auth_unix(seed, host, uid, gid, groups):
     p = Packer()
@@ -468,7 +468,7 @@ def unix_epoch():
     offset, hh = divmod(hh + offset, 24)
     d = d + offset
     _unix_epoch = time.mktime((y, m, d, hh, mm, ss, 0, 0, 0))
-    print("Unix epoch:", time.ctime(_unix_epoch))
+    #print("Unix epoch:", time.ctime(_unix_epoch))
     return _unix_epoch
 
 
@@ -693,7 +693,7 @@ class Client:
     def addpackers(self):
         # Override this to use derived classes from Packer/Unpacker
         self.packer = Packer()
-        self.unpacker = Unpacker('')
+        self.unpacker = Unpacker(b'')
 
     def make_call(self, proc, args, pack_func, unpack_func, init=0):
         # Don't normally override this (but see Broadcast)
@@ -798,10 +798,10 @@ class Client:
         elif flavor == RPCSEC_GSS:
             service = self.sec[1]
             if init == 1:
-                self.cred = (RPCSEC_GSS, make_cred_gss(0, '', rpc_gss_svc_none,
+                self.cred = (RPCSEC_GSS, make_cred_gss(0, b'', rpc_gss_svc_none,
                                                        RPCSEC_GSS_INIT))
             elif init > 1:
-                self.cred = (RPCSEC_GSS, make_cred_gss(0, '', rpc_gss_svc_none,
+                self.cred = (RPCSEC_GSS, make_cred_gss(0, b'', rpc_gss_svc_none,
                                                        RPCSEC_GSS_CONTINUE_INIT))
             else:
                 self.gss_seq_num += 1 # FRED - check for overflow
@@ -857,35 +857,29 @@ def sendrecord(sock, record):
 def recvfrag(sock):
     header = sock.recv(4)
     if len(header) < 4:
-        if len(header)==0:
+        if len(header) == 0:
             raise RPCNoHeader
         else:
             raise EOFError
     x = struct.unpack('!L', header)[0]
     last = ((x & 0x80000000) != 0)
     n = int(x & 0x7fffffff)
-    ## frag = ''
     frag = []
     # Boo! it blocks here!!! (yasu)
     while n > 0:
       buf = sock.recv(n)
       if not buf: raise EOFError
       n = n - len(buf)
-      ## frag = frag + buf
       frag.append(buf)
-    ## return last, frag
-    return last, ''.join(frag)
+    return last, b''.join(frag)
 
 def recvrecord(sock):
-    ## record = ''
     record = []
     last = 0
     while not last:
       last, frag = recvfrag(sock)
-      ## record = record + frag
       record.append(frag)
-    ## return record
-    return ''.join(record)
+    return b''.join(record)
 
 
 # Try to bind to a reserved port (must be root)
@@ -1124,7 +1118,7 @@ class PartialPortMapperClient:
     __pychecker__ = 'no-classattr'
     def addpackers(self):
         self.packer = PortMapperPacker()
-        self.unpacker = PortMapperUnpacker('')
+        self.unpacker = PortMapperUnpacker(b'')
 
     def Set(self, mapping):
         return self.make_call(PMAPPROC_SET, mapping, \
@@ -1444,7 +1438,7 @@ class Server:
     def addpackers(self):
         # Override this to use derived classes from Packer/Unpacker
         self.packer = Packer()
-        self.unpacker = Unpacker('')
+        self.unpacker = Unpacker(b'')
 
     def addpackerclasses(self):
         # Override this to use derived classes from Packer/Unpacker
@@ -1616,7 +1610,7 @@ class MultipleTCPServer(Server):
 
             # make per-thread packer and unpacker
             packer = self.packerClass()
-            unpacker = self.unpackerClass('')
+            unpacker = self.unpackerClass(b'')
 
             reply = self.handle_threaded(call, packer, unpacker)
             if reply is not None:

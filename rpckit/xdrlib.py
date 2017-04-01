@@ -93,13 +93,22 @@ def assert_list(x):
 
 def assert_string(x):
     try:
-        #val = str(x)
-        val = str(x).encode('utf-8')
+        val = str(x)
     except:
         badinput = repr(x)
         if len(badinput) > 10:
             badinput = badinput[0:10] + "..."
         raise XDRError("Expected string, got %s %s" % (badinput, type(x)))
+    return val
+
+def assert_bytes(x):
+    try:
+        val = bytes(x)
+    except:
+        badinput = repr(x)
+        if len(badinput) > 10:
+            badinput = badinput[0:10] + "..."
+        raise XDRError("Expected bytes, got %s %s" % (badinput, type(x)))
     return val
 
 
@@ -134,9 +143,9 @@ class Packer:
         except XDRError as msg:
             raise XDRError("pack_bool " + repr(msg))
         if val:
-            self.__buf.write('\0\0\0\1')
+            self.__buf.write(b'\0\0\0\1')
         else:
-            self.__buf.write('\0\0\0\0')
+            self.__buf.write(b'\0\0\0\0')
 
     def pack_uhyper(self, x):
         try:
@@ -161,41 +170,48 @@ class Packer:
             raise XDRError("pack_double " + msg)
         self.__buf.write(struct.pack('>d', x))
 
-    def pack_fstring(self, n, s):
+    def pack_fopaque(self, n, s):
         try:
             n = assert_int(n)
         except XDRError as msg:
-            raise XDRError("pack_fstring " + msg)
+            raise XDRError("pack_fopaque " + msg)
         try:
-            s = assert_string(s)
+            s = assert_bytes(s)
         except XDRError as msg:
-            raise XDRErrorr("pack_fstring " + msg)
+            raise XDRErrorr("pack_fopaque " + msg)
         if n < 0:
-            raise XDRError('pack_fstring size must be nonnegative')
+            raise XDRError('pack_fopaque size must be nonnegative')
         n = ((n + 3 ) // 4) * 4
         data = s[:n]
-        data = data + b''.join(['\0' for x in range(n - len(data))])
+        data = data + b''.join([b'\0' for x in range(n - len(data))])
         self.__buf.write(data)
 
-    pack_fopaque = pack_fstring
+    pack_fstring = pack_fopaque
 
-    def pack_string(self, s):
+    def pack_bytes(self, s):
         try:
-            s = assert_string(s)
+            s = assert_bytes(s)
         except XDRError as msg:
-            raise XDRError("pack_string " + msg)
+            raise XDRError("pack_bytes " + msg)
         n = len(s)
         try:
             self.pack_uint(n)
         except XDRError as msg:
-            raise XDRError("pack_string " + msg)
+            raise XDRError("pack_bytes " + msg)
         try:
             self.pack_fstring(n, s)
         except XDRError as msg:
-            raise XDRError("pack_String " + msg)
+            raise XDRError("pack_bytes " + msg)
 
-    pack_opaque = pack_string
-    pack_bytes = pack_string
+    def pack_string(self, s):
+        try:
+            s = assert_string(s)
+            s = s.encode('utf-8')
+        except XDRError as msg:
+            raise XDRError("pack_string " + msg)
+        self.pack_bytes(s)
+
+    pack_opaque = pack_bytes
 
     def pack_list(self, list, pack_item):
         list = assert_list(list)
@@ -228,6 +244,8 @@ class Unpacker:
         self.reset(data)
 
     def reset(self, data):
+        if isinstance(data, str) and not isinstance(data, bytes):
+            raise ValueError("Data type should be bytes not str: '%s'" % data)
         self.__buf = data
         self.__pos = 0
 
@@ -317,19 +335,26 @@ class Unpacker:
             # raise XDRError, "Packet len (%d) less than needed (%d)." % (len(self.__buf),j)
         self.__pos = j
         data = (self.__buf + (b'\x00' * pad_len))[i:i+n]
-        return data.decode('utf-8')
-
-    unpack_fopaque = unpack_fstring
+        return data
 
     def unpack_string(self):
         try:
             n = self.unpack_uint()
         except XDRError as msg:
             raise XDRError("unpack_string: unpacking integer" + msg)
+        data = self.unpack_fstring(n)
+        return data.decode('utf-8')
+
+    unpack_fopaque = unpack_fstring
+
+    def unpack_bytes(self):
+        try:
+            n = self.unpack_uint()
+        except XDRError as msg:
+            raise XDRError("unpack_string: unpacking integer" + msg)
         return self.unpack_fstring(n)
 
-    unpack_opaque = unpack_string
-    unpack_bytes = unpack_string
+    unpack_opaque = unpack_bytes
 
     def unpack_list(self, unpack_item):
         list = []

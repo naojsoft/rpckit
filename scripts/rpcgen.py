@@ -167,8 +167,8 @@ TRUE = 1
 """
 
 typesheader = """
-#from .%s import *
-#from .%s import *
+from .%s import *
+from .%s import *
 try:
     # Assume that the python xdrlib comes first on the PYTHONPATH
     from xdrlib import Error as XDRError
@@ -191,8 +191,8 @@ class BadDiscriminant(rpc.RPCException):
 
 packerheader = """
 from rpckit import rpc
-#from . import %s
-#from . import %s
+from . import %s
+from . import %s
 from rpckit import xdrlib
 try:
     # Assume that the python xdrlib comes first on the PYTHONPATH
@@ -1046,9 +1046,8 @@ def run(infile):
 
     print("Input file is", infile)
 
-    f = open(infile)
-    data = f.read()
-    f.close()
+    with open(infile, 'r') as f:
+        data = f.read()
 
     print("Writing constants to", constants_file + ".py")
     print("Writing type classes to", types_file + ".py")

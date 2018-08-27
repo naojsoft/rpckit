@@ -287,7 +287,7 @@ class Packer(xdrlib.Packer):
         """ Takes as input a tuple of (flavor, body) """
         flavor, body = auth
         if len(body) > 400:
-            raise xdrlib.XDRError("Authenticator body too long: %i"%len(body))
+            raise xdrlib.XDRError("Authenticator body too long: %i" % len(body))
         self.pack_enum(flavor)
         self.pack_opaque(body)
 
@@ -609,7 +609,7 @@ class Client:
                 p.pack_opaque(data)
                 data = p.get_buffer()
             else:
-                raise RPCSecurity("Unknown service %i for RPCSEC_GSS"%service)
+                raise RPCSecurity("Unknown service %i for RPCSEC_GSS" % service)
         else:
             raise BadRPCFlavor(flavor)
 
@@ -654,7 +654,7 @@ class Client:
                     raise RPCSecurity("Mismatched seqnums in reply")
                 data = p.get_remaining()
             else:
-                raise RPCSecurity("Unknown service %i for RPCSEC_GSS"%service)
+                raise RPCSecurity("Unknown service %i for RPCSEC_GSS" % service)
         else:
             raise BadRPCFlavor(flavor)
 
@@ -1180,7 +1180,7 @@ class TCPClient(RawTCPClient):
         port = pmap.Getport((prog, vers, IPPROTO_TCP, 0))
         pmap.close()
         if port == 0:
-            raise PortMapError("program %d not registered at %s" % (prog,host))
+            raise PortMapError("program %d not registered at %s" % (prog, host))
         RawTCPClient.__init__(self, host, prog, vers, port, sec, logger=logger)
 
 
@@ -1191,7 +1191,7 @@ class UDPClient(RawUDPClient):
         port = pmap.Getport((prog, vers, IPPROTO_UDP, 0))
         pmap.close()
         if port == 0:
-            raise PortMapError("program %d not registered at %s" % (prog,host))
+            raise PortMapError("program %d not registered at %s" % (prog, host))
         RawUDPClient.__init__(self, host, prog, vers, port, sec, logger=logger)
 
 
@@ -1472,7 +1472,7 @@ class TCPServer(Server):
                 break
 
             except socket.error as msg:
-                self.logger.error('socket error: %s' % msg)
+                self.logger.error('socket error: %s' % str(msg))
                 break
 
             reply = self.handle(call)
@@ -1494,7 +1494,7 @@ class TCPServer(Server):
                 break
 
             except socket.error as msg:
-                self.logger.error('socket error: %s' % msg)
+                self.logger.error('socket error: %s' % str(msg))
                 break
 
             # make per-thread packer and unpacker

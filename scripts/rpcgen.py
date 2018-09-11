@@ -168,7 +168,6 @@ TRUE = 1
 
 typesheader = """
 from .%s import *
-from .%s import *
 
 from rpckit.xdrlib import XDRError
 from rpckit import rpc
@@ -1055,7 +1054,7 @@ def run(infile):
 
     # Write beginning of types file.
     types_out.write(comment_string)
-    types_out.write(typesheader % (constants_file, packer_file))
+    types_out.write(typesheader % (constants_file))
 
     # Write beginning of packer file.
     packer_file_out.write(comment_string)

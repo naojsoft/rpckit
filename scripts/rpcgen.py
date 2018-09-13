@@ -50,10 +50,12 @@
 # };
 # rpcgen.py does not handle this case either, but it probably should.
 from __future__ import print_function
+from __future__ import unicode_literals
 
 import sys
 import keyword
 from io import StringIO
+import io
 import time
 import os
 
@@ -121,7 +123,7 @@ def t_comment(t):
 
 def t_error(t):
     print("Illegal character %s at %d type %s" % (repr(t.value[0]), t.lineno, t.type))
-    t.skip(1)
+    t.lexer.skip(1)
 
 # Build the lexer
 from ply import lex
@@ -1034,7 +1036,7 @@ def run(infile):
 
     print("Input file is", infile)
 
-    with open(infile, 'r') as f:
+    with io.open(infile, 'r', encoding="utf-8") as f:
         data = f.read()
 
     print("Writing constants to", constants_file + ".py")
@@ -1077,7 +1079,9 @@ def run(infile):
         ip.pr("unpack_%s = rpc.Unpacker.%s\n" % (t, "un" + packer))
 
     from ply import yacc
-    yacc.yacc()
+    # Suppress writing of the parsetab.py and parser.out files by
+    # setting write_tables and debug to False.
+    yacc.yacc(write_tables=False, debug=False)
 
     yacc.parse(data, debug=0)
 

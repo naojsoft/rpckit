@@ -1,7 +1,7 @@
 #
 # rpc.py - RFC1057/RFC1831
 #
-# Copyright (C) 2005-2017 Subaru Telescope, NAOJ (http://subarutelescope.org)
+# Copyright (C) 2005-2022 Subaru Telescope, NAOJ (http://subarutelescope.org)
 # All rights reserved.
 #
 # Copyright (C) 2001 Cendio Systems AB (http://www.cendio.se)

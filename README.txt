@@ -4,7 +4,7 @@ A Python module for making SunRPC compatible calls
 
 COPYRIGHT AND LICENSE
 ---------------------
-Copyright (C) 2005-2017 Subaru Telescope, NAOJ (http://subarutelescope.org)
+Copyright (C) 2005-2022 Subaru Telescope, NAOJ (http://subarutelescope.org)
 All rights reserved.
 
 Copyright (C) 2001 Cendio Systems AB (http://www.cendio.se)
@@ -30,17 +30,7 @@ Please see the file LICENSE.txt in the top-level directory for details.
 
 BUILDING AND INSTALLATION
 -------------------------
-rpckit uses a standard distutils based install, e.g.
 
-    $ python setup.py build
+$ pip install .
 
-or
-
-    $ python setup.py install
-
-If you want to install to a specific area, do
-
-    $ python setup.py install --prefix=/some/path
-
-The files will then end up under /some/path
 

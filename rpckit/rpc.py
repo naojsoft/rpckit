@@ -37,7 +37,6 @@
 # XXX not receive a timely reply -- use only for idempotent calls!
 
 # XXX There is no provision for call timeout on TCP connections
-from __future__ import print_function
 
 __pychecker__ = 'no-callinit'
 

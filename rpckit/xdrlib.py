@@ -3,15 +3,11 @@
 See: RFC 1014
 
 """
-from __future__ import print_function
-
 import struct
 import string
 from types import *
 
-import six
-if six.PY3:
-    long = int
+long = int
 
 from io import BytesIO as _StringIO
 

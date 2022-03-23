@@ -49,8 +49,6 @@
 #     void;
 # };
 # rpcgen.py does not handle this case either, but it probably should.
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import sys
 import keyword
@@ -159,9 +157,7 @@ known_types = {}
 constheader = """
 # Need to import flavors mentioned in secinfo4
 from rpckit.rpc import RPCSEC_GSS
-import six
-if not six.PY2:
-    long = int
+long = int
 
 FALSE = 0
 TRUE = 1
